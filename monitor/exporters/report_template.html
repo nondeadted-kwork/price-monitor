@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мониторинг цен конкурентов</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --ring: rgba(11, 11, 11, .10);
+    --accent: #2a78d6;
+    --down: #d03b3b;        /* статус critical: конкурент подешевел — стоит проверить свою цену */
+    --up: #006300;          /* success text */
+    --warn-bg: #fff4e0;
+    --warn-ink: #7a4b00;
+    --row-hover: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255, 255, 255, .10); --accent: #3987e5;
+      --down: #ec835a; --up: #0ca30c; --warn-bg: #2d2412; --warn-ink: #fab219; --row-hover: #222220;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255, 255, 255, .10); --accent: #3987e5;
+    --down: #ec835a; --up: #0ca30c; --warn-bg: #2d2412; --warn-ink: #fab219; --row-hover: #222220;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { width: min(1320px, 100% - 32px); margin: 0 auto; padding: 28px 0 48px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .sub { color: var(--ink-2); margin: 0; }
+  .card { background: var(--surface); border-radius: 14px; box-shadow: 0 0 0 1px var(--ring); }
+
+  .alert { display: flex; gap: 10px; align-items: flex-start; background: var(--warn-bg); color: var(--warn-ink);
+           border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
+  .alert ul { margin: 4px 0 0; padding-left: 18px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { padding: 16px 18px; }
+  .kpi .label { color: var(--ink-2); font-size: 13px; }
+  .kpi .value { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin-top: 2px; }
+  .kpi .note { color: var(--muted); font-size: 12px; }
+
+  .filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters input, .filters select { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--grid);
+                                    border-radius: 10px; padding: 8px 12px; }
+  .filters input { width: min(320px, 100%); }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--grid); border-radius: 10px; padding: 3px; }
+  .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; border-radius: 7px; padding: 5px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .count { color: var(--muted); margin-left: auto; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .table-card { overflow: auto; max-height: 72vh; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--surface); color: var(--ink-2); font-weight: 600; font-size: 12px;
+       cursor: pointer; user-select: none; z-index: 1; box-shadow: inset 0 -1px 0 var(--axis); }
+  th[aria-sort="ascending"]::after { content: " ↑"; }
+  th[aria-sort="descending"]::after { content: " ↓"; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.title { white-space: normal; min-width: 240px; }
+  td.title a { color: var(--ink); text-decoration: none; display: block; }
+  td.title .src { font-size: 12px; margin-top: 1px; }
+  td.title a:hover { text-decoration: underline; }
+  tbody tr:hover { background: var(--row-hover); }
+  .src { color: var(--ink-2); }
+  .muted { color: var(--muted); }
+  .delta { font-weight: 600; }
+  .delta.down { color: var(--down); }
+  .delta.up { color: var(--up); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--grid);
+           border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+
+  .history { padding: 16px 18px; max-height: 72vh; overflow: auto; }
+  .history h2 { font-size: 15px; margin: 0 0 10px; }
+  .history ol { list-style: none; margin: 0; padding: 0; }
+  .history li { padding: 10px 0; border-bottom: 1px solid var(--grid); }
+  .history li:last-child { border-bottom: 0; }
+  .history .t { display: block; color: var(--ink); text-decoration: none; margin: 2px 0; }
+  .history .t:hover { text-decoration: underline; }
+  .history .meta { color: var(--muted); font-size: 12px; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 16px; }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .table-card, .history { max-height: none; }
+  }
+  @media (max-width: 640px) {
+    .opt { display: none; }          /* на телефоне — только товар, цена и изменение */
+    td.title { min-width: 0; }
+    th, td { padding: 9px 10px; }
+    .kpi .value { font-size: 24px; }
+    .count { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Мониторинг цен конкурентов</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+  </header>
+
+  <div id="errors"></div>
+  <section class="kpis" id="kpis" aria-label="Сводка"></section>
+
+  <div class="filters" role="search">
+    <input id="q" type="search" placeholder="Поиск по товару" aria-label="Поиск по товару">
+    <select id="source" aria-label="Конкурент"><option value="">Все конкуренты</option></select>
+    <div class="seg" role="group" aria-label="Изменение цены">
+      <button type="button" data-mode="all" aria-pressed="true">Все</button>
+      <button type="button" data-mode="down" aria-pressed="false">▼ Подешевели</button>
+      <button type="button" data-mode="up" aria-pressed="false">▲ Подорожали</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="layout">
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="title">Товар</th>
+            <th data-key="price" class="num">Цена</th>
+            <th class="num opt" data-key="prev">Было</th>
+            <th class="num" data-key="pct" aria-sort="ascending">Изменение</th>
+            <th class="num opt" data-key="min">Мин. за 30 дн.</th>
+            <th class="num opt" data-key="changedTs">Изменилась</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <aside class="card history">
+      <h2>Последние изменения</h2>
+      <ol id="history"></ol>
+    </aside>
+  </div>
+
+  <footer>Цены собраны автоматически: Python, httpx, BeautifulSoup, SQLite. ▼ — конкурент снизил цену, ▲ — поднял.</footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, children = []) => {
+  const node = Object.assign(document.createElement(tag), props);
+  for (const c of [].concat(children)) node.append(c instanceof Node ? c : document.createTextNode(c ?? ''));
+  return node;
+};
+const plural = (n, one, few, many) =>
+  n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
+const pctText = (p) => (p === null ? '—' : `${p < 0 ? '▼' : p > 0 ? '▲' : ''} ${p > 0 ? '+' : ''}${p.toFixed(1)}%`);
+const deltaCell = (p) => el('span', { className: `delta ${p < 0 ? 'down' : p > 0 ? 'up' : 'muted'}` }, pctText(p));
+
+$('sub').textContent = `Обновлено ${DATA.generated} · алерт в Telegram при снижении от ${DATA.threshold}%`;
+
+if (DATA.errors.length) {
+  $('errors').append(el('div', { className: 'alert', role: 'status' }, [
+    el('span', {}, '⚠️'),
+    el('div', {}, [el('b', {}, 'Часть данных не собрана'), el('ul', {}, DATA.errors.map((e) => el('li', {}, e)))]),
+  ]));
+}
+
+const down = DATA.rows.filter((r) => r.pct !== null && r.pct < 0).length;
+const up = DATA.rows.filter((r) => r.pct !== null && r.pct > 0).length;
+const atMin = DATA.rows.filter((r) => r.isMin && r.pct !== null && r.pct < 0).length;
+[
+  ['Товаров под наблюдением', DATA.rows.length.toLocaleString('ru-RU'), `${DATA.sources.length} ${plural(DATA.sources.length, 'конкурент', 'конкурента', 'конкурентов')}`],
+  ['Подешевели', down, 'с прошлого изменения цены'],
+  ['Подорожали', up, 'с прошлого изменения цены'],
+  ['Снизили до минимума', atMin, 'самая низкая цена за 30 дней'],
+].forEach(([label, value, note]) => $('kpis').append(el('div', { className: 'card kpi' }, [
+  el('div', { className: 'label' }, label), el('div', { className: 'value' }, String(value)),
+  el('div', { className: 'note' }, note),
+])));
+
+for (const s of DATA.sources) $('source').append(el('option', { value: s }, s));
+
+const state = { q: '', source: '', mode: 'all', key: 'pct', dir: 1 };
+
+function sorted(rows) {
+  const { key, dir } = state;
+  return [...rows].sort((a, b) => {
+    const x = a[key], y = b[key];
+    if (x === null || x === '') return 1;           // пустые — всегда вниз
+    if (y === null || y === '') return -1;
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ru')) * dir;
+  });
+}
+
+function render() {
+  const q = state.q.trim().toLowerCase();
+  const rows = DATA.rows.filter((r) =>
+    (!q || r.title.toLowerCase().includes(q)) &&
+    (!state.source || r.source === state.source) &&
+    (state.mode === 'all' || (state.mode === 'down' ? r.pct < 0 : r.pct > 0) && r.pct !== null));
+  const body = $('rows');
+  body.replaceChildren(...sorted(rows).map((r) => el('tr', {}, [
+    el('td', { className: 'title' }, [
+      el('a', { href: r.url, target: '_blank', rel: 'noopener' }, r.title),
+      el('div', { className: 'src' }, r.source),
+    ]),
+    el('td', { className: 'num' }, [r.priceText, ...(r.isMin && r.pct !== null && r.pct < 0 ? [el('span', { className: 'badge' }, 'мин')] : [])]),
+    el('td', { className: 'num muted opt' }, r.prevText || '—'),
+    el('td', { className: 'num' }, [deltaCell(r.pct)]),
+    el('td', { className: 'num opt' }, r.minText),
+    el('td', { className: 'num muted opt' }, r.changed),
+  ])));
+  if (!rows.length) body.append(el('tr', {}, [el('td', { colSpan: 6, className: 'empty' }, 'Ничего не найдено')]));
+  $('count').textContent = `Показано ${rows.length} из ${DATA.rows.length}`;
+}
+
+document.querySelectorAll('th[data-key]').forEach((th) => th.addEventListener('click', () => {
+  const key = th.dataset.key;
+  state.dir = state.key === key ? -state.dir : 1;
+  state.key = key;
+  document.querySelectorAll('th[data-key]').forEach((h) => h.removeAttribute('aria-sort'));
+  th.setAttribute('aria-sort', state.dir === 1 ? 'ascending' : 'descending');
+  render();
+}));
+$('q').addEventListener('input', (e) => { state.q = e.target.value; render(); });
+$('source').addEventListener('change', (e) => { state.source = e.target.value; render(); });
+document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  state.mode = b.dataset.mode;
+  document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  render();
+}));
+
+const hist = $('history');
+if (!DATA.history.length) hist.append(el('li', { className: 'muted' }, 'Изменений пока нет — они появятся после второго прогона.'));
+for (const h of DATA.history) hist.append(el('li', {}, [
+  el('span', { className: 'meta' }, `${h.when} · ${h.source}`),
+  el('a', { className: 't', href: h.url, target: '_blank', rel: 'noopener' }, h.title),
+  el('span', {}, [`${h.old} → `, el('b', {}, h.new), ' ', deltaCell(h.pct)]),
+]));
+
+render();
+</script>
+</body>
+</html>

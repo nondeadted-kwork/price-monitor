@@ -1,0 +1,11 @@
+services:
+  monitor:
+    build: .
+    env_file: .env
+    volumes:
+      - ./output:/app/output                 # база, prices.xlsx, report.html
+      - ./config.yaml:/app/config.yaml:ro    # правите сайты без пересборки образа
+      # - ./google-key.json:/app/google-key.json:ro   # если нужна выгрузка в Google Sheets
+    restart: unless-stopped
+    logging:
+      options: { max-size: "10m", max-file: "3" }

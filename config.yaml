@@ -1,0 +1,31 @@
+# Какие сайты парсить и когда присылать алерт.
+# Селектор — обычный CSS. «@атрибут» в конце — взять атрибут вместо текста: "h3 a@title".
+
+alert_drop_percent: 5        # алерт, если цена упала на 5% и больше
+suspicious_drop_percent: 70  # падение больше 70% — скорее ошибка на сайте или в парсинге: помечаем отдельно
+request_delay_sec: 1.0       # пауза между запросами к одному сайту, чтобы не нагружать его
+timeout_sec: 20
+user_agent: "PriceMonitorBot/1.0 (+https://github.com/nondeadted-kwork/price-monitor)"
+
+sources:
+  # Два тренировочных магазина, сделанных специально для отработки парсинга.
+  # Под заказчика здесь будут сайты его конкурентов.
+  - name: Books to Scrape
+    start_url: https://books.toscrape.com/catalogue/page-1.html
+    item: article.product_pod
+    title: h3 a@title
+    price: p.price_color
+    link: h3 a@href
+    next_page: li.next a@href
+    currency: GBP
+    max_pages: 5
+
+  - name: WebScraper Store
+    start_url: https://webscraper.io/test-sites/e-commerce/static/computers/laptops
+    item: div.card.thumbnail
+    title: a.title@title
+    price: "[itemprop=price]"
+    link: a.title@href
+    next_page: a.page-link[rel=next]@href
+    currency: USD
+    max_pages: 20

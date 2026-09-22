@@ -1,0 +1,3 @@
+# Вариант без Docker: прогон каждый час с 8 до 22 по будням, лог — в файл.
+# crontab -e  и вставить строку (пути поправить под свой сервер):
+0 8-22 * * 1-5  cd /opt/price-monitor && .venv/bin/python -m monitor run >> output/cron.log 2>&1
