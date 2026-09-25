@@ -157,7 +157,7 @@
     </aside>
   </div>
 
-  <footer>Цены собраны автоматически: Python, httpx, BeautifulSoup, SQLite. ▼ — конкурент снизил цену, ▲ — поднял.</footer>
+  <footer>Цены собраны автоматически: Python, httpx, BeautifulSoup, SQLite. ▼ значит конкурент снизил цену, ▲ значит поднял.</footer>
 </div>
 
 <script>
@@ -249,7 +249,7 @@ document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('clic
 }));
 
 const hist = $('history');
-if (!DATA.history.length) hist.append(el('li', { className: 'muted' }, 'Изменений пока нет — они появятся после второго прогона.'));
+if (!DATA.history.length) hist.append(el('li', { className: 'muted' }, 'Изменений пока нет. Они появятся после второго прогона.'));
 for (const h of DATA.history) hist.append(el('li', {}, [
   el('span', { className: 'meta' }, `${h.when} · ${h.source}`),
   el('a', { className: 't', href: h.url, target: '_blank', rel: 'noopener' }, h.title),

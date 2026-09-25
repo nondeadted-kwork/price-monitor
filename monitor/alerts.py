@@ -32,8 +32,8 @@ def build_message(changes: list[Change], errors: list[str], cfg: Config, total: 
         parts.append(f"📉 <b>Снижение цен у конкурентов: {len(normal)}</b>")
         parts += [line(c) for c in normal]
     if suspicious:
-        parts.append(f"\n⚠️ <b>Слишком резкое падение (больше {cfg.suspicious_drop_percent:.0f}%) — проверьте вручную, "
-                     f"похоже на ошибку на сайте:</b>")
+        parts.append(f"\n⚠️ <b>Слишком резкое падение (больше {cfg.suspicious_drop_percent:.0f}%). "
+                     f"Похоже на ошибку на сайте, проверьте вручную:</b>")
         parts += [line(c) for c in suspicious]
     if errors:
         parts.append("\n🛠 <b>Не удалось собрать:</b>")
@@ -46,7 +46,7 @@ def build_message(changes: list[Change], errors: list[str], cfg: Config, total: 
     text = ""
     for i, part in enumerate(parts):
         if len(text) + len(part) + len(footer) + 40 > LIMIT:
-            text += f"\n…и ещё {len(parts) - i} строк — смотрите таблицу."
+            text += f"\n…и ещё {len(parts) - i} строк, смотрите таблицу."
             break
         text += ("\n" if text else "") + part
     return text + footer
