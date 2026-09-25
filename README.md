@@ -2,8 +2,13 @@
 
 **RU** · [EN below](#english)
 
-> Скриншот ниже — реальный прогон по двум тренировочным магазинам для парсинга (217 товаров, 25 секунд).
-> Видео 40 сек: [ссылка]
+> Живое демо: [Google Таблица с ценами](https://docs.google.com/spreadsheets/d/1CMvHB8fO6sqJYEmaweGbWcRcJ95jBatP0_dRuEoKc34/edit#gid=25012120) (обновляется раз в час, только просмотр) ·
+> видео 40 сек: [ссылка]
+
+![Google Таблица с ценами](docs/sheet.png)
+
+HTML-отчёт с поиском, фильтрами и историей изменений. Это реальный прогон по двум тренировочным магазинам
+для парсинга: 217 товаров за 25 секунд.
 
 ![Отчёт](docs/report.png)
 
@@ -39,8 +44,8 @@
   start_url: https://example.ru/catalog/laptops
   item: .product-card          # карточка товара
   title: .product-card__name   # название
-  price: .price-current        # цена: «1 299 ₽», «$1,178.99», «12 990,50 руб.» — всё разбирается
-  link: a@href                 # «@атрибут» — взять атрибут, а не текст
+  price: .price-current        # цена: «1 299 ₽», «$1,178.99», «12 990,50 руб.», всё разбирается
+  link: a@href                 # «@атрибут» значит взять атрибут, а не текст
   next_page: a.next@href       # пагинация
   currency: RUB
   max_pages: 10
@@ -58,7 +63,7 @@
 ## Стек
 
 Python 3.12 · httpx · BeautifulSoup + lxml · SQLite · openpyxl · gspread · Docker.
-Около 1 000 строк кода и 28 тестов. Тесты работают без интернета: сохранённые страницы
+Около 1 000 строк кода и 31 тест. Тесты работают без интернета: сохранённые страницы
 и подменённый HTTP-транспорт покрывают падения сайтов, 404/503, смену вёрстки и robots.txt.
 
 ```
@@ -76,21 +81,32 @@ monitor/exporters/     Excel, Google Sheets, HTML-отчёт
 ```bash
 python3.12 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-pytest                                    # 28 тестов, < 1 сек
+pytest                                    # 31 тест, < 1 сек
 python -m monitor check                   # проверить селекторы: первая страница каждого сайта
 python -m monitor run                     # прогон → output/prices.xlsx, output/report.html
 python -m monitor run --demo-shuffle 6    # для видео: сдвинуть цены у 6 товаров (см. ниже)
 ```
 
-Telegram и Google Sheets включаются через `.env` (пример — `.env.example`).
-На сервере: `docker compose up -d` — прогон раз в час, результаты в `./output`.
+Telegram и Google Sheets включаются через `.env` (пример в `.env.example`).
+На сервере: `docker compose up -d`, прогон раз в час, результаты в `./output`.
 Без Docker: `deploy/crontab.example`.
 
 **Про `--demo-shuffle`.** На тренировочных сайтах цены не меняются никогда, поэтому показать алерт на них
-нельзя. Флаг перед сохранением сдвигает цены у нескольких случайных товаров на ±7–18%.
-Это единственное место, где данные не настоящие, и оно отключено по умолчанию. Следующий обычный прогон
+нельзя. Флаг перед сохранением сдвигает цены у нескольких случайных товаров на ±7-18%.
+Это единственное место, где данные не настоящие, и по умолчанию оно выключено. Следующий обычный прогон
 вернёт настоящие цены, и в истории это будет видно как обратное изменение. Начать с чистого листа:
 `rm output/prices.db`.
+
+**Как устроено живое демо.** Парсер работает на сервере в Docker (`docker compose up -d`) и раз в час
+обновляет Google Таблицу. Раз в сутки, в 12:00 по Москве, cron запускает в том же контейнере ещё один
+прогон со сдвигом цен у трёх товаров:
+
+```
+0 9 * * *  cd /opt/price-monitor && docker compose exec -T monitor python -m monitor run --demo-shuffle 3
+```
+
+Поэтому в таблице копится история, а в Telegram приходят алерты. Об этом же написано в самой таблице,
+на вкладке «Про демо».
 
 ## Под заказчика
 
@@ -116,5 +132,9 @@ Telegram и Google Sheets включаются через `.env` (пример �
   respected, prices stored as integer cents, file lock against overlapping cron runs.
 
 **Stack:** Python 3.12, httpx, BeautifulSoup/lxml, SQLite, openpyxl, gspread, Docker.
-About 1,000 lines of code, 28 offline tests (saved HTML fixtures + mocked HTTP transport).
+About 1,000 lines of code, 31 offline tests (saved HTML fixtures + mocked HTTP transport).
 The screenshot is a real run against two public scraping sandboxes (217 products, 25 s).
+
+**Live demo:** a public Google Sheet that the server updates every hour (link at the top). Sandbox prices
+never change, so once a day a cron job runs `--demo-shuffle 3` to move three prices by 7-18%, which makes
+alerts and history visible. The sheet says so on its «Про демо» tab; everything else is real data.

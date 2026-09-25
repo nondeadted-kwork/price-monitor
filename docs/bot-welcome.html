@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 640px; height: 360px; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at 28% 40%, #5b3fa0 0%, #3d2775 48%, #1d1140 100%);
+    font-family: Manrope, -apple-system, "Helvetica Neue", Arial, sans-serif; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 36px 0 40px; box-sizing: border-box;
+  }
+  .left { display: flex; flex-direction: column; }
+  .pill {
+    align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: 2px;
+    color: #1d1140; background: #cdbcff; border-radius: 999px; padding: 5px 12px;
+  }
+  .name { font-size: 66px; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-top: 16px; }
+  .kind { font-size: 15px; font-weight: 700; letter-spacing: 6px; color: #cdbcff; margin-top: 10px; }
+  .sub { font-size: 17px; font-weight: 500; color: #e4dcff; margin-top: 18px; line-height: 1.35; }
+  .hint { font-size: 13px; font-weight: 600; color: #cdbcff; margin-top: 22px; }
+  .features { display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 700; }
+  .icon {
+    width: 38px; height: 38px; border-radius: 11px; background: rgba(205, 188, 255, 0.16);
+    border: 1px solid rgba(205, 188, 255, 0.35); display: grid; place-items: center;
+  }
+  .icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2;
+              stroke-linecap: round; stroke-linejoin: round; }
+</style>
+<body>
+  <div class="left">
+    <div class="pill">ДЕМО-БОТ</div>
+    <div class="name">Цены</div>
+    <div class="kind">КОНКУРЕНТОВ</div>
+    <div class="sub">Алерт, когда конкурент<br>снизил цену</div>
+    <div class="hint">Собрано на Python</div>
+  </div>
+  <div class="features">
+    <div class="row">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      Проверка раз в час
+    </div>
+    <div class="row">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/>
+        <path d="M3 9h18M3 14.5h18M9 9v11"/></svg></div>
+      Google Таблица
+    </div>
+    <div class="row">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M22 17 13.5 8.5l-5 5L2 7"/><path d="M16 17h6v-6"/></svg></div>
+      Снижение от 5%
+    </div>
+    <div class="row">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
+        <path d="M12 7v5l4 2"/></svg></div>
+      История за 30 дней
+    </div>
+    <div class="row">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/></svg></div>
+      Без ложных тревог
+    </div>
+  </div>
+</body>
+</html>
