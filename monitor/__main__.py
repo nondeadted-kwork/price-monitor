@@ -14,6 +14,8 @@ import logging
 import re
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from . import alerts
@@ -82,6 +84,20 @@ def cmd_run(cfg: Config, shuffle: int, no_alert: bool) -> int:
         storage.close()
 
 
+@contextmanager
+def run_lock(output_dir: str) -> Iterator[bool]:
+    """Замок на время одного прогона: второй не стартует, пока идёт первый (цикл --every + cron или
+    ручной запуск, медленный сайт). Между прогонами замок свободен. Отдаёт False, если он занят."""
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    with open(Path(output_dir) / ".lock", "w") as fh:  # закрытие файла снимает замок
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            yield False
+        else:
+            yield True
+
+
 def cmd_check(cfg: Config) -> int:
     """Быстрая проверка селекторов после правки config.yaml."""
     fetcher = Fetcher(cfg.user_agent, cfg.timeout_sec, cfg.request_delay_sec)
@@ -143,23 +159,22 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "report":
         return cmd_report(cfg)
 
-    # Замок: второй прогон не стартует, пока идёт первый (cron + ручной запуск, медленный сайт).
-    Path(cfg.output_dir).mkdir(parents=True, exist_ok=True)
-    lock = open(Path(cfg.output_dir) / ".lock", "w")
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        log.error("Предыдущий прогон ещё идёт — выходим")
-        return 3
-
     if not args.every:
-        return cmd_run(cfg, args.demo_shuffle, args.no_alert)
+        with run_lock(cfg.output_dir) as locked:
+            if not locked:
+                log.error("Предыдущий прогон ещё идёт, выходим")
+                return 3
+            return cmd_run(cfg, args.demo_shuffle, args.no_alert)
     while True:
         started = time.monotonic()
-        try:
-            cmd_run(cfg, args.demo_shuffle, args.no_alert)
-        except Exception:  # noqa: BLE001 — цикл не должен умирать из-за одного плохого прогона
-            log.exception("Прогон упал, следующий по расписанию")
+        with run_lock(cfg.output_dir) as locked:
+            if not locked:
+                log.warning("Идёт другой прогон (cron или ручной запуск), этот пропускаем")
+            else:
+                try:
+                    cmd_run(cfg, args.demo_shuffle, args.no_alert)
+                except Exception:  # noqa: BLE001 — цикл не должен умирать из-за одного плохого прогона
+                    log.exception("Прогон упал, следующий по расписанию")
         time.sleep(max(0, args.every - (time.monotonic() - started)))
 
 
