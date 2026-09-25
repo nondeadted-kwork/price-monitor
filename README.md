@@ -84,7 +84,7 @@ pip install -r requirements-dev.txt
 pytest                                    # 31 тест, < 1 сек
 python -m monitor check                   # проверить селекторы: первая страница каждого сайта
 python -m monitor run                     # прогон → output/prices.xlsx, output/report.html
-python -m monitor run --demo-shuffle 6    # для видео: сдвинуть цены у 6 товаров (см. ниже)
+python -m monitor run --demo-shuffle 6    # для видео: сдвинуть цены у 6 товаров на каждом сайте
 ```
 
 Telegram и Google Sheets включаются через `.env` (пример в `.env.example`).
@@ -92,14 +92,14 @@ Telegram и Google Sheets включаются через `.env` (пример �
 Без Docker: `deploy/crontab.example`.
 
 **Про `--demo-shuffle`.** На тренировочных сайтах цены не меняются никогда, поэтому показать алерт на них
-нельзя. Флаг перед сохранением сдвигает цены у нескольких случайных товаров на ±7-18%.
+нельзя. Флаг перед сохранением сдвигает цены у N случайных товаров на каждом сайте на ±7-18%.
 Это единственное место, где данные не настоящие, и по умолчанию оно выключено. Следующий обычный прогон
 вернёт настоящие цены, и в истории это будет видно как обратное изменение. Начать с чистого листа:
 `rm output/prices.db`.
 
 **Как устроено живое демо.** Парсер работает на сервере в Docker (`docker compose up -d`) и раз в час
 обновляет Google Таблицу. Раз в сутки, в 12:00 по Москве, cron запускает в том же контейнере ещё один
-прогон со сдвигом цен у трёх товаров:
+прогон со сдвигом цен у трёх товаров на каждом сайте:
 
 ```
 0 9 * * *  cd /opt/price-monitor && docker compose exec -T monitor python -m monitor run --demo-shuffle 3
@@ -136,5 +136,5 @@ About 1,000 lines of code, 31 offline tests (saved HTML fixtures + mocked HTTP t
 The screenshot is a real run against two public scraping sandboxes (217 products, 25 s).
 
 **Live demo:** a public Google Sheet that the server updates every hour (link at the top). Sandbox prices
-never change, so once a day a cron job runs `--demo-shuffle 3` to move three prices by 7-18%, which makes
+never change, so once a day a cron job runs `--demo-shuffle 3` to move three prices per shop by 7-18%, which makes
 alerts and history visible. The sheet says so on its «Про демо» tab; everything else is real data.

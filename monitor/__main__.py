@@ -2,7 +2,7 @@
 
 python -m monitor run                    один прогон: парсинг → таблицы → алерт
 python -m monitor run --every 30m        по кругу раз в 30 минут (для Docker)
-python -m monitor run --demo-shuffle 6   для видео: сдвинуть цены у 6 товаров (на тестовых сайтах они не меняются)
+python -m monitor run --demo-shuffle 6   для видео: сдвинуть цены у 6 товаров на каждом сайте (сами они не меняются)
 python -m monitor check                  проверить селекторы: первая страница каждого источника
 python -m monitor report                 пересобрать xlsx/html из базы без парсинга
 """
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="собрать цены, обновить таблицы, прислать алерт")
     run.add_argument("--every", type=parse_interval, help="повторять с интервалом: 30m, 2h")
     run.add_argument("--demo-shuffle", type=int, default=0, metavar="N",
-                     help="ТОЛЬКО ДЛЯ ДЕМО: сдвинуть цены у N случайных товаров")
+                     help="ТОЛЬКО ДЛЯ ДЕМО: сдвинуть цены у N случайных товаров на каждом сайте")
     run.add_argument("--no-alert", action="store_true", help="не слать алерт")
     sub.add_parser("check", help="проверить селекторы на первой странице каждого источника")
     sub.add_parser("report", help="пересобрать таблицы из базы без парсинга")
