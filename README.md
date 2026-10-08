@@ -2,8 +2,7 @@
 
 **RU** · [EN below](#english)
 
-> Живое демо: [Google Таблица с ценами](https://docs.google.com/spreadsheets/d/1CMvHB8fO6sqJYEmaweGbWcRcJ95jBatP0_dRuEoKc34/edit#gid=25012120) (обновляется раз в час, только просмотр) ·
-> видео 40 сек: [ссылка]
+> Живое демо: [Google Таблица с ценами](https://docs.google.com/spreadsheets/d/1CMvHB8fO6sqJYEmaweGbWcRcJ95jBatP0_dRuEoKc34/edit#gid=25012120) (обновляется раз в час, только просмотр)
 
 ![Google Таблица с ценами](docs/sheet.png)
 
